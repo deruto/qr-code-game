@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>QR Hunt — Scan & Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#fff4fb;--panel:#ffffff;--ink:#1a0b2e;--muted:#6b5b8a;--line:#f0d6ff;
+  --cyan:#00c2d6;--pink:#ff2e88;--yellow:#b38f00;--green:#1f9d63;--purple:#7b2ff7;
+  --accent-fill:#39ff14;--accent-ink:#0d2b06;
+  color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d0221;--panel:#1b0f3d;--ink:#f3ecff;--muted:#b9a8dd;--line:#3a1f66;
+    --cyan:#00e5ff;--pink:#ff2e88;--yellow:#ffd600;--green:#39ff14;--purple:#a76bff;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d0221;--panel:#1b0f3d;--ink:#f3ecff;--muted:#b9a8dd;--line:#3a1f66;
+  --cyan:#00e5ff;--pink:#ff2e88;--yellow:#ffd600;--green:#39ff14;--purple:#a76bff;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:20px/1.4 'VT323',ui-monospace,Consolas,monospace;padding:22px 14px 40px}
+.wrap{max-width:760px;margin:auto}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
+.brand{font-family:'Press Start 2P',system-ui,sans-serif;font-size:13px;letter-spacing:.02em;color:var(--pink)}
+.pill{border:2px solid var(--ink);border-radius:6px;padding:7px 11px;color:var(--muted);font-size:14px;background:var(--panel)}
+.btn.mute{border:2px solid var(--ink);border-radius:6px;background:var(--panel);padding:8px 10px;font-size:16px;line-height:1;cursor:pointer;box-shadow:3px 3px 0 var(--ink)}
+.btn.mute:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.hero{text-align:center;margin:26px 0}
+.eyebrow{color:var(--cyan);font-size:11px;font-weight:700;letter-spacing:.12em;font-family:'Press Start 2P',system-ui,sans-serif}
+.hero h1{font-family:'Press Start 2P',system-ui,sans-serif;font-size:clamp(22px,6vw,40px);line-height:1.5;letter-spacing:0;margin:16px 0}
+.hero h1 span{color:var(--pink)}
+.hero p{color:var(--muted);max-width:440px;margin:14px auto;font-size:19px}
+.scorecard{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;margin:24px 0}
+.score,.stat{background:var(--panel);border:3px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--purple);padding:20px}
+.score small,.stat small{display:block;color:var(--muted);font-size:12px;letter-spacing:.08em;font-family:'Press Start 2P',system-ui,sans-serif}
+.points{font-family:'Press Start 2P',system-ui,sans-serif;font-size:clamp(30px,8vw,46px);line-height:1.4;color:var(--pink);margin:8px 0}
+.stats2{display:grid;gap:12px}
+.stat strong{font-size:28px;display:block;margin-top:6px;color:var(--cyan)}
+.progress-wrap{margin:18px 0 24px}
+.progress-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:15px;color:var(--muted)}
+.progress-head b{color:var(--ink);font-family:'Press Start 2P',system-ui,sans-serif;font-size:11px}
+.progress-track{display:flex;gap:5px}
+.dot{flex:1;height:14px;border-radius:2px;background:var(--line);border:2px solid var(--ink);transition:background .3s}
+.dot.filled:nth-child(4n+1){background:var(--pink)}
+.dot.filled:nth-child(4n+2){background:var(--cyan)}
+.dot.filled:nth-child(4n+3){background:var(--yellow)}
+.dot.filled:nth-child(4n+4){background:var(--green)}
+.complete-banner{display:none;background:var(--panel);border:3px solid var(--yellow);border-radius:10px;box-shadow:4px 4px 0 var(--ink);padding:16px 18px;margin:0 0 18px;text-align:center;font-family:'Press Start 2P',system-ui,sans-serif;font-size:13px;color:var(--yellow)}
+.complete-banner.show{display:block;animation:pop .5s ease}
+@media (prefers-reduced-motion:reduce){.complete-banner.show{animation:none}}
+@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:scale(1);opacity:1}}
+.panel{background:var(--panel);border:3px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);padding:18px;margin-top:18px}
+.panel h2{font-family:'Press Start 2P',system-ui,sans-serif;font-size:14px;margin:0 0 8px;color:var(--cyan)}
+.sub{color:var(--muted);font-size:16px;margin:0 0 15px}
+#reader{width:100%;overflow:hidden;border-radius:8px;background:#0a0c13;min-height:220px;border:2px solid var(--ink)}
+#reader video{border-radius:6px;object-fit:cover}
+.buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{border:2px solid var(--ink);border-radius:6px;padding:12px 16px;font-family:'Press Start 2P',system-ui,sans-serif;font-size:11px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--purple);outline-offset:2px}
+.primary{background:var(--accent-fill);color:var(--accent-ink)}
+.secondary{background:var(--panel);color:var(--ink)}
+.danger{color:#fff;background:var(--pink)}
+.status{padding:12px 14px;border-radius:8px;background:var(--bg);border:2px solid var(--line);color:var(--muted);font-size:16px;margin-top:12px}
+.status.good{color:var(--green);border-color:var(--green)}
+.manual{display:flex;gap:8px}
+.manual input{min-width:0;flex:1;background:var(--bg);border:2px solid var(--ink);border-radius:6px;color:var(--ink);padding:12px;font:18px 'VT323',monospace;outline:none}
+.manual input:focus-visible{border-color:var(--purple)}
+.history{list-style:none;padding:0;margin:12px 0 0}
+.history li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:2px dashed var(--line);font-size:16px}
+.history li span{color:var(--muted);overflow-wrap:anywhere}
+.history b{color:var(--green);white-space:nowrap;font-family:'Press Start 2P',system-ui,sans-serif;font-size:11px}
+.empty{color:var(--muted);font-size:16px;padding:14px 0}
+.foot{color:var(--muted);text-align:center;font-size:13px;margin-top:22px}
+.hidden{display:none!important}
+details.host{margin-top:16px}
+details.host summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--muted);list-style:none}
+details.host summary::-webkit-details-marker{display:none}
+details.host summary:before{content:'▸ ';color:var(--purple)}
+details.host[open] summary:before{content:'▾ '}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:14px}
+.qr-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;color:var(--ink)}
+.qr-canvas{background:#fff;display:flex;justify-content:center;align-items:center;padding:8px;border-radius:8px;min-height:132px}
+.qr-canvas img{max-width:100%;height:auto}
+.qr-card b{display:block;margin-top:8px;font-size:13px}
+.qr-card small{display:block;color:var(--muted);overflow-wrap:anywhere;font-size:10px;margin-top:3px}
+@media print{
+  body{background:white;color:#111;padding:0}
+  .top,.hero,.scorecard,.progress-wrap,.complete-banner,.foot,details.host summary,.panel:not(#qrManager){display:none!important}
+  #qrManager{display:block!important;background:white;border:0;color:#111;margin:0;padding:0}
+  #qrManager h2,#qrManager .sub{color:#111}
+  .qr-grid{grid-template-columns:repeat(3,1fr)}
+  .qr-card{border:1px solid #bbb;background:white;color:#111}
+  .qr-card small{color:#333}
+  .qr-canvas{border:0}
+  #printBtn{display:none!important}
+}
+@media(max-width:430px){
+  body{padding:16px 12px 30px}
+  .scorecard{grid-template-columns:1fr}
+  .stats2{grid-template-columns:1fr 1fr}
+  .panel{padding:14px}
+  .manual{flex-direction:column}
+  .manual .btn{width:100%}
+}
+</style></head>
+<body><main class="wrap">
+<header class="top"><div class="brand">✳ QR HUNT</div><div style="display:flex;gap:8px;align-items:center"><button class="btn mute" id="muteBtn" aria-label="Toggle sound" type="button">🔊</button><div class="pill">SCAN • SCORE • REPEAT</div></div></header>
+<section class="hero"><div class="eyebrow">Your scan adventure starts here</div><h1>Find it.<br><span>Scan it.</span><br>Score it.</h1><p>Scan official QR Hunt codes to collect points. Each valid code earns <b>+1 point</b>, once per device.</p></section>
+
+<div class="complete-banner" id="completeBanner">🏁 Hunt complete! You've found all 12 official codes.</div>
+
+<section class="scorecard"><div class="score"><small>Total points</small><div class="points" id="score">0</div><div class="pill" style="display:inline-block">🏆 Keep collecting</div></div><div class="stats2"><div class="stat"><small>Successful scans</small><strong id="scans">0</strong></div><div class="stat"><small>Best streak</small><strong id="streak">0 🔥</strong></div></div></section>
+
+<div class="progress-wrap"><div class="progress-head"><span>Codes found</span><b id="progressLabel">0 / 12</b></div><div class="progress-track" id="progressTrack"></div></div>
+
+<section class="panel"><h2>📷 Scan a QR code</h2><p class="sub">Allow camera access when asked. Works best on HTTPS or localhost.</p><div id="reader"></div><div class="buttons"><button class="btn primary" id="startBtn">Start camera</button><button class="btn secondary" id="stopBtn" disabled>Stop camera</button></div><div id="status" class="status" role="status">Ready when you are. Start the camera to scan your first code.</div></section>
+
+<section class="panel"><h2>⌨️ No camera? Enter a code</h2><p class="sub">Only an exact official QR Hunt code is accepted. Random QR codes will not earn points.</p><form class="manual" id="manualForm"><input id="manualCode" placeholder="Enter official code payload" autocomplete="off" required><button class="btn secondary" type="submit">Validate code</button></form></section>
+
+<section class="panel"><h2>🧾 Recent scans</h2><p class="sub">Your score is saved on this device.</p><ul class="history" id="history"><li class="empty">No scans yet — go find your first point!</li></ul><div class="buttons"><button class="btn danger" id="resetBtn">Reset game</button></div>
+<details class="host"><summary>Host tools: printable code sheet</summary>
+<div id="qrManager"><h2 style="margin-top:14px">🖨️ Official code sheet</h2><p class="sub">For organizers only — print and hide these around the venue.</p><div class="qr-grid" id="qrGrid"></div><div class="buttons"><button class="btn secondary" id="printBtn">Print sheet</button></div></div>
+</details>
+</section>
+
+<div class="foot">QR HUNT · A simple browser game · No account required</div></main>
+<script>
+const $=id=>document.getElementById(id);let qr=null, running=false, scanLock=false, sheetBuilt=false;
+// Fixed allowlist: only these exact payloads are valid in this prototype.
+const EVENT_ID='SWADESHI2026';
+const OFFICIAL_CODES=Array.from({length:12},(_,i)=>{const id='SH'+String(i+1).padStart(3,'0');return {id,payload:`QRHUNT:${EVENT_ID}:${id}`,points:1}});
+let data={score:0,scans:0,streak:0,history:[],claimed:[],muted:false};
+try{const saved=JSON.parse(localStorage.getItem('qrHuntSave')||'null');if(saved&&typeof saved.score==='number')data={...data,...saved,claimed:Array.isArray(saved.claimed)?saved.claimed:[],muted:!!saved.muted}}catch(e){}
+const AudioCtx=window.AudioContext||window.webkitAudioContext;let actx=null;
+function actxGet(){if(!AudioCtx)return null;if(!actx)actx=new AudioCtx();if(actx.state==='suspended')actx.resume();return actx}
+function beep(freq,dur,vol=0.16,delay=0){if(data.muted)return;const c=actxGet();if(!c)return;const t=c.currentTime+delay;const o=c.createOscillator();const g=c.createGain();o.type='square';o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+dur+0.02)}
+function sfxSuccess(){beep(880,.08);beep(1318,.12,.16,.08)}
+function sfxDuplicate(){beep(500,.07,.14);beep(380,.09,.12,.07)}
+function sfxError(){beep(150,.2,.18)}
+function sfxComplete(){[523,659,784,1046].forEach((f,i)=>beep(f,.15,.18,i*.12))}
+function save(){try{localStorage.setItem('qrHuntSave',JSON.stringify(data))}catch(e){}render()}
+function render(){
+  $('score').textContent=data.score;$('scans').textContent=data.scans;$('streak').textContent=data.streak+' 🔥';
+  const h=$('history');h.innerHTML='';
+  if(!data.history.length){h.innerHTML='<li class="empty">No scans yet — go find your first point!</li>'}
+  else data.history.slice(0,8).forEach(item=>{const li=document.createElement('li'),label=document.createElement('span'),pts=document.createElement('b');label.textContent=item.value;pts.textContent='+'+item.points+' · '+item.time;li.append(label,pts);h.appendChild(li)});
+  const total=OFFICIAL_CODES.length,found=data.claimed.length;
+  $('progressLabel').textContent=found+' / '+total;
+  const track=$('progressTrack');
+  if(track.children.length!==total){track.innerHTML='';for(let i=0;i<total;i++){const d=document.createElement('div');d.className='dot';track.appendChild(d)}}
+  [...track.children].forEach((d,i)=>d.classList.toggle('filled',i<found));
+  const wasComplete=$('completeBanner').classList.contains('show');
+  const isComplete=found>=total;
+  $('completeBanner').classList.toggle('show',isComplete);
+  if(isComplete&&!wasComplete)sfxComplete();
+  $('muteBtn').textContent=data.muted?'🔇':'🔊';
+}
+function setStatus(msg,good=false){$('status').textContent=msg;$('status').className='status'+(good?' good':'')}
+function award(value){
+  const clean=String(value||'').trim().toUpperCase();
+  if(!clean)return setStatus('Enter or scan a code first.');
+  const code=OFFICIAL_CODES.find(c=>c.payload===clean);
+  if(!code){sfxError();setStatus('❌ Invalid QR code. Only official QR Hunt codes are accepted.');return}
+  if(data.claimed.includes(code.id)){sfxDuplicate();setStatus('⚠️ This official code has already been claimed on this device. No points added.');return}
+  sfxSuccess();
+  data.claimed.push(code.id);data.score+=code.points;data.scans++;data.streak++;
+  data.history.unshift({value:code.id,points:code.points,time:new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})});
+  data.history=data.history.slice(0,30);save();
+  setStatus('🎉 +'+code.points+' point! Official code accepted: '+code.id,true);
+}
+async function start(){
+  if(running)return;
+  if(!window.Html5Qrcode){setStatus('Scanner library could not load. Check internet, or use manual entry.');return}
+  try{
+    if(!qr)qr=new Html5Qrcode('reader');
+    $('startBtn').disabled=true;setStatus('Requesting camera access…');
+    await qr.start({facingMode:'environment'},{fps:10,qrbox:{width:230,height:230},aspectRatio:1.0},decoded=>{if(scanLock)return;scanLock=true;award(decoded);setTimeout(()=>{scanLock=false},1800)},()=>{});
+    running=true;$('stopBtn').disabled=false;$('startBtn').textContent='Camera running';setStatus('Camera is on. Scan an official QR Hunt code.');
+  }catch(e){setStatus('Could not start camera: '+(e.message||e)+' — use HTTPS and allow camera access, or enter a code manually.');$('startBtn').disabled=false}
+}
+async function stop(){if(running&&qr){try{await qr.stop()}catch(e){}running=false}$('startBtn').disabled=false;$('startBtn').textContent='Start camera';$('stopBtn').disabled=true}
+function renderQrSheet(){
+  const grid=$('qrGrid');grid.innerHTML='';
+  if(!window.QRCode){grid.innerHTML='<div class="empty">QR generator library did not load. Check your internet connection.</div>';return}
+  OFFICIAL_CODES.forEach(code=>{
+    const card=document.createElement('div');card.className='qr-card';
+    const qrBox=document.createElement('div');qrBox.className='qr-canvas';const holder=document.createElement('div');qrBox.appendChild(holder);
+    const name=document.createElement('b');name.textContent='QR Hunt · '+code.id;
+    const payload=document.createElement('small');payload.textContent=code.payload;
+    card.append(qrBox,name,payload);grid.appendChild(card);
+    new QRCode(holder,{text:code.payload,width:112,height:112,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  });
+}
+document.querySelector('details.host').addEventListener('toggle',e=>{if(e.target.open&&!sheetBuilt){sheetBuilt=true;renderQrSheet()}});
+$('printBtn').addEventListener('click',()=>window.print());
+$('muteBtn').addEventListener('click',()=>{data.muted=!data.muted;actxGet();save()});
+$('startBtn').addEventListener('click',()=>{actxGet();start()});
+$('stopBtn').addEventListener('click',stop);
+$('manualForm').addEventListener('submit',e=>{e.preventDefault();award($('manualCode').value);$('manualCode').value=''});
+$('resetBtn').addEventListener('click',()=>{if(confirm('Reset all points, claimed codes and scan history on this device?')){data={score:0,scans:0,streak:0,history:[],claimed:[]};save();setStatus('Game reset. Ready for a fresh hunt!')}});
+render();
+</script></body></html>
